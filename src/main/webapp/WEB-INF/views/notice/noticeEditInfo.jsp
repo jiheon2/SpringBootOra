@@ -84,7 +84,7 @@
                     type: "post", // 전송방식은 Post
                     dataType: "JSON", // 전송 결과는 JSON으로 받기
                     data: $("#f").serialize(), // form 태그 내 input 등 객체를 자동으로 전송할 형태로 변경하기
-                    success: function (json) { // /notice/noticeUpdate 호출이 성공했다면..
+                    success: function (json) { // /notice/noticeUpdate 호출이 성공했다면.. json은 컨테이너에서 보내주는 데이터타입의 변수명
                         alert(json.msg); // 메시지 띄우기
                         location.href = "/notice/noticeList"; // 공지사항 리스트 이동
                     }
