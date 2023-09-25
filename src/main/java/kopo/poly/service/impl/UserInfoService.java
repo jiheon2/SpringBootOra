@@ -7,12 +7,14 @@ import kopo.poly.persistance.mapper.IUserInfoMapper;
 import kopo.poly.service.IMailService;
 import kopo.poly.service.IUserInfoService;
 import kopo.poly.util.CmmUtil;
+import kopo.poly.util.DateUtil;
 import kopo.poly.util.EncryptUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.ThreadLocalRandom;
 
 @Service
@@ -128,5 +130,45 @@ public class UserInfoService implements IUserInfoService {
 
     }
 
+    /**
+     * 로그인을 위한 아이디와 비밀번호 일치여부 확인하는 코드
+     *
+     * @param pDTO 로그인을 위한 회원아이디, 비밀번호
+     * @return 로그인 된 회원아이디 정보
+     * @throws Exception
+     */
+    @Override
+    public UserInfoDTO getLogin(UserInfoDTO pDTO) throws Exception {
 
+        log.info(this.getClass().getName() + ".getLogin Start!");
+
+        // ID PW 일치여부 확인하기 위한 mapper 호출
+        // userInfoMapper.getLogin(pDTO)의 함수결과가 Null이면 UserInfoDTO 메모리에 올리는 코드
+        UserInfoDTO rDTO = Optional.ofNullable(userInfoMapper.getLogin(pDTO)).orElseGet(UserInfoDTO::new);
+
+        /*
+         * userInfoMapper로 부터 SELECT 쿼리의 결과로 회원아이디를 받아왔다면 로그인 성공
+         *
+         * DTO의 변수에 값이 있는지 확인하는 방법 중 처리속도에서 가장 좋은 방법은 DTO의 길이를 확인하는 방법
+         * .length()를 통해 회원아이디의 글자수를 가져와 0보다 큰지 비교
+         * 0보다 크다는 것은 값이 존재한다는 것을 의미
+         */
+        if (CmmUtil.nvl(rDTO.getUserId()).length() > 0 ) {
+
+            MailDTO mDTO = new MailDTO();
+
+            mDTO.setToMail(EncryptUtil.decAES128CBC(CmmUtil.nvl(rDTO.getEmail()))); // 복호화 코드
+
+            mDTO.setTitle("로그인 알림"); // 제목
+
+            mDTO.setContents(DateUtil.getDateTime("yyyy.MM.dd hh:mm:ss") + "에 " + CmmUtil.nvl(rDTO.getUserName()) + "님이 로그인하셨습니다."); // 내용
+
+            mailService.doSendMail(mDTO); // 메일 보내는 서비스 로직
+
+        }
+
+        log.info(this.getClass().getName() + ".getLogin End!");
+
+        return rDTO;
+    }
 }

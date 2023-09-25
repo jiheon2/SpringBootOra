@@ -15,4 +15,6 @@ public interface IUserInfoService {
     List<UserInfoDTO> getList() throws Exception;
 
     UserInfoDTO getUserInfo(UserInfoDTO pDTO) throws Exception;
+
+    UserInfoDTO getLogin(UserInfoDTO pDTO) throws Exception;
 }

@@ -9,6 +9,7 @@ import kopo.poly.util.EncryptUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
 import org.springframework.ui.ModelMap;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -217,5 +218,134 @@ public class UserInfoController {
         // 함수 처리가 끝나고 보여줄 JSP 파일명
         // webapp/WEB-INF/views/notice/noticeInfo.jsp
         return "user/userInfo";
+    }
+
+
+    // 로그인 화면으로 이동하는 코드
+    @GetMapping(value="login")
+    public String login() {
+        log.info(this.getClass().getName() + ".user/login Start!");
+
+        log.info(this.getClass().getName() + ".user/login End!");
+
+        return "user/login";
+    }
+
+    @GetMapping(value="loginResult")
+    public String loginResult() {
+        log.info(this.getClass().getName() + ".user/loginResult Start!");
+
+        log.info(this.getClass().getName() + ".user/loginResult End!");
+
+        return "user/loginResult";
+    }
+
+    // 로그인 처리 및 결과 알려주는 코드
+    @ResponseBody
+    @PostMapping(value = "loginProc")
+    public MsgDTO loginProc(HttpServletRequest request, HttpSession session) {
+
+        log.info(this.getClass().getName() + ".loginProc Start!");
+
+        int res = 0; // res : 로그인 결과처리를 저장하는 변수( 성공 : 1 / ID PW 불일치 : 0 / 시스템 오류 : 2 )
+        String msg = ""; // 로그인 결과에 대한 메시지 전달 변수
+        MsgDTO dto = null; // 결과 메시지 구조
+
+        UserInfoDTO pDTO = null; // 웹에서 받는 정보 저장할 변수
+
+        try {
+            String userId = CmmUtil.nvl(request.getParameter("userId"));
+            String password = CmmUtil.nvl(request.getParameter("password"));
+
+            log.info("userId : " + userId);
+            log.info("password : " + password);
+
+            // 웹에서 받는 정보를 저장할 변수를 메모리에 올림(new 연산자)
+            pDTO = new UserInfoDTO();
+
+            pDTO.setUserId(userId); // 아이디 넣고
+
+            pDTO.setPassword(EncryptUtil.encHashSHA256(password)); // 비밀번호는 SHA255 써서 암호화 해서 넣음
+
+            UserInfoDTO rDTO = userInfoService.getLogin(pDTO); // 아이디와 비밀번호 일치하는지 확인하기 위해 getLogin함수를 서비스에서 호출
+
+            /**
+             * 로그인에 성공했으면 회원 아이디 정보를 session에 저장
+             *
+             * 세션은 톰켓의 메모리에 존재, 웹사이트에 접속한 사람(연결된 객체)마다 메모리에 값을 올림
+             *
+             * ex) 100명이 웹사이트에 접속하면 100명 각자의 아이디를 메모리에 저장 > 과도한 세션은 메모리 부하 발생 > 서버다운
+             *
+             * 스프링에서 세션 사용하기
+             * > 함수명의 파라미터에 HttpSession session이 존재해야 함
+             *
+             * url 전달이 필요없음 / jsp, Controller에서 쉽게 사용 가능
+             **/
+
+            if (CmmUtil.nvl(rDTO.getUserId()).length() > 0 ) { // 로그인이 성공 > length()가 0보다 크면 값이 있다는 것을 나타냄
+
+                res = 1;
+
+                msg = "로그인이 성공했습니다.";
+
+                /*
+                세션에 값 저장하기 > 추후 로그인여부 체크를 위함
+                일반적으로 세션에 저장되는 키는 대문자로 입력 및 SS를 앞에 붙임
+                 */
+                session.setAttribute("SS_USER_ID", userId);
+                session.setAttribute("SS_USER_NAME", CmmUtil.nvl(rDTO.getUserName()));
+
+            } else {
+                msg = "아이디와 비밀번호가 올바르지 않습니다.";
+            }
+        } catch (Exception e) { // 실패 시
+            msg = "시스템 문제로 로그인에 실패했습니다.";
+            res = 2;
+            log.info(e.toString());
+            e.printStackTrace();
+
+        } finally { // 무조건 실행
+            // 결과 메시지 전달
+            dto = new MsgDTO();
+            dto.setResult(res);
+            dto.setMsg(msg);
+
+            log.info(this.getClass().getName() + ".loginProc End!");
+        }
+
+        return dto;
+    }
+
+    @ResponseBody
+    @PostMapping(value = "loginInfo")
+    public String loginInfo(Model model, HttpSession session) throws Exception {
+
+        log.info(this.getClass().getName() + ".loginInfo Start!");
+
+        UserInfoDTO pDTO = null; // 웹에서 받는 정보 저장할 변수
+
+        String userId = CmmUtil.nvl((String) session.getAttribute("SS_USER_ID"));
+
+        log.info("userId : " + userId);
+
+        // 웹에서 받는 정보를 저장할 변수를 메모리에 올림(new 연산자)
+        pDTO = new UserInfoDTO();
+
+        pDTO.setUserId(userId); // 아이디 넣고
+
+        UserInfoDTO rDTO = Optional.ofNullable(userInfoService.getUserInfo(pDTO)).orElseGet(UserInfoDTO::new);
+
+        if (userId == "") {
+
+            return "/user/login";
+        }
+
+        model.addAttribute("rDTO", rDTO);
+
+
+        log.info(this.getClass().getName() + ".loginInfo End!");
+
+
+        return "/user/userInfo";
     }
 }

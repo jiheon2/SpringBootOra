@@ -13,8 +13,6 @@
     <link rel="stylesheet" href="/css/table.css"/>
     <script type="text/javascript" src="/js/jquery-3.6.0.min.js"></script>
     <script>
-        // Controller에서 받은 세션에 저장된 값
-        const session_user_id = "<%=CmmUtil.nvl((String)session.getAttribute("SESSION_USER_ID"))%>";
 
         // 공지사항 게시글 작성자 아이디
         const user_id = "<%=CmmUtil.nvl(rDTO.getUserId())%>";
