@@ -171,4 +171,69 @@ public class UserInfoService implements IUserInfoService {
 
         return rDTO;
     }
+
+    /** 아이디 및 비밀번호 찾기 코드 **/
+    @Override
+    public UserInfoDTO searchUserIdOrPasswordProc(UserInfoDTO pDTO) throws Exception {
+
+        log.info(this.getClass().getName() + ".searchUserIdOrPasswordProc Start!");
+
+        UserInfoDTO rDTO = userInfoMapper.getUserId(pDTO);
+
+        log.info(this.getClass().getName() + ".searchUserIdOrPasswordProc End!");
+
+        return rDTO;
+    }
+
+    /** 비밀번호 재설정 코드 **/
+    @Override
+    public int newPasswordProc(UserInfoDTO pDTO) throws Exception {
+
+        log.info(this.getClass().getName() + ".newPasswordProc Start!");
+
+        // 비밀번호 재설정
+        int success = userInfoMapper.updatePassword(pDTO);
+
+        log.info(this.getClass().getName() + ".newPasswordProc End!");
+
+        return success;
+    }
+
+    @Override
+    public UserInfoDTO getAuthNumber(UserInfoDTO pDTO) throws Exception {
+
+        log.info(this.getClass().getName() + ".emailAuth Start!");
+
+        UserInfoDTO rDTO = userInfoMapper.getEmailExists(pDTO); // 중복체크 쿼리 실행
+
+        String existsYn = CmmUtil.nvl(rDTO.getExistsYn());
+
+        log.info("existsYn : " + existsYn);
+
+        if (existsYn.equals("Y")) {
+
+            // 6자리 랜덤번호 생성
+            int authNumber = ThreadLocalRandom.current().nextInt(100000, 1000000);
+
+            log.info("authNumber : " + authNumber);
+
+            // 인증번호 발송 로직
+            MailDTO dto = new MailDTO();
+
+            dto.setTitle("이메일 중복 확인 인증번호 발송 메일");
+            dto.setContents("인증번호는 " + authNumber + " 입니다.");
+            dto.setToMail(EncryptUtil.decAES128CBC(CmmUtil.nvl(pDTO.getEmail())));
+
+            mailService.doSendMail(dto);
+
+            dto = null;
+
+            // 인증번호를 결과값에 넣어주기
+            rDTO.setAuthNumber(authNumber);
+        }
+
+        log.info(this.getClass().getName() + ".emailAuth End!");
+
+        return rDTO;
+    }
 }

@@ -8,6 +8,7 @@ import kopo.poly.util.CmmUtil;
 import kopo.poly.util.EncryptUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.catalina.User;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.ui.ModelMap;
@@ -18,10 +19,7 @@ import org.springframework.web.bind.annotation.ResponseBody;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpSession;
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 
 @Slf4j
 @RequestMapping(value = "/user")
@@ -347,5 +345,146 @@ public class UserInfoController {
 
 
         return "/user/userInfo";
+    }
+
+    @GetMapping(value = "searchUserId")
+    public String searchUserId() {
+
+        log.info(this.getClass().getName() + ".user/searchUserId Start!");
+
+        log.info(this.getClass().getName() + ".user/searchUserId End!");
+
+        return "user/searchUserId";
+
+    }
+
+    /** ID 찾기 로직 수행 **/
+    @PostMapping(value = "searchUserIdProc")
+    public String searchUserIdProc(HttpServletRequest request, Model model) throws Exception {
+
+        log.info(this.getClass().getName() + ".searchUserIdProc Start!");
+
+        /* 웹에서 받는 정보를 String 변수에 저장 > bcz DTO에 저장하기위해 임시로 넣어두는 것 */
+
+        String userName = CmmUtil.nvl(request.getParameter("userName"));
+        String email = CmmUtil.nvl(request.getParameter("email"));
+
+        log.info("userName : " + userName);
+        log.info("email : " + email);
+
+        /* String 변수값 DTO에 저장하기 */
+
+        UserInfoDTO pDTO = new UserInfoDTO();
+        pDTO.setUserName(userName);
+        pDTO.setEmail(EncryptUtil.encAES128CBC(email)); // 암호화 된걸 찾기 위해서 암호화한 것을 넣음
+
+        UserInfoDTO rDTO = Optional.ofNullable(userInfoService.searchUserIdOrPasswordProc(pDTO)).orElseGet(UserInfoDTO::new);
+
+        model.addAttribute("rDTO", rDTO);
+
+        log.info(this.getClass().getName() + ".searchUserIdProc End!");
+
+        return "user/searchUserIdResult";
+    }
+
+    @GetMapping(value = "searchPassword")
+    public String searchPassword(HttpSession session) {
+        log.info(this.getClass().getName() + ".searchPassword Start!");
+
+        // 강제 URL 입력 등 오는 경우가 있어 세션 삭제
+        // 비밀번호 재생성하는 화면은 보안을 위해 생성한 NEW_PASSWORD 세션 삭제
+        session.setAttribute("NEW_PASSWORD", "");
+        session.removeAttribute("NEW_PASSWORD");
+
+        log.info(this.getClass().getName() + ".searchPassword End!");
+
+        return "user/searchPassword";
+    }
+
+    /** 비밀번호 찾기 로직 수행 **/
+    // 아이디, 비밀번호, 이메일 일치하면 비밀번호 재발급 화면 이동
+    @PostMapping(value = "searchPasswordProc")
+    public String searchPasswordProc(HttpServletRequest request, Model model, HttpSession session) throws Exception {
+        log.info(this.getClass().getName() + ".searchPasswordProc Start!");
+
+        String userId = CmmUtil.nvl(request.getParameter("userId"));
+        String userName = CmmUtil.nvl(request.getParameter("userName"));
+        String email = CmmUtil.nvl(request.getParameter("email"));
+
+        log.info("userId : " + userId);
+        log.info("userName : " + userName);
+        log.info("email : " + email);
+
+        UserInfoDTO pDTO = new UserInfoDTO();
+        pDTO.setUserId(userId);
+        pDTO.setUserName(userName);
+        pDTO.setEmail(EncryptUtil.encAES128CBC(email));
+
+        UserInfoDTO rDTO = Optional.ofNullable(userInfoService.searchUserIdOrPasswordProc(pDTO)).orElseGet(UserInfoDTO::new);
+
+        model.addAttribute("rDTO", rDTO);
+
+        // 비밀번호 재생성 화면은 보안을 위해 반드시 세션이 존재해야 접속가능 하도록 구현
+        // userId 값을 넣은 이유는 비밀번호 재설정하는 newPasswordProc 함수를 사용하기 위함
+        session.setAttribute("NEW_PASSWORD", userId);
+
+        log.info(this.getClass().getName() + ".searchPasswordProc End!");
+
+        return "user/newPassword";
+    }
+
+    @PostMapping(value = "newPasswordProc")
+    public String newPasswordProc(HttpServletRequest request, Model model, HttpSession session) throws Exception {
+
+        log.info(this.getClass().getName() + ".newPasswordProc Start!");
+
+        String msg = "";
+
+        String newPassword = CmmUtil.nvl((String) session.getAttribute("NEW_PASSWORD"));
+
+        if (newPassword.length() > 0) {
+            String password = CmmUtil.nvl(request.getParameter("password"));
+
+            log.info("password : " + password);
+
+            UserInfoDTO pDTO = new UserInfoDTO();
+            pDTO.setUserId(newPassword);
+            pDTO.setPassword(EncryptUtil.encHashSHA256(password));
+
+            userInfoService.newPasswordProc(pDTO);
+
+            session.setAttribute("NEW_PASSWORD", "");
+            session.removeAttribute("NEW_PASSWORD");
+
+            msg = "비밀번호가 재설정 되었습니다.";
+
+        } else {
+            msg = "비정상 접근입니다.";
+        }
+
+        model.addAttribute("msg", msg);
+
+        log.info(this.getClass().getName() + ".newPasswordProc End!");
+
+        return "user/newPasswordResult";
+    }
+
+    @ResponseBody
+    @PostMapping(value = "getAuthNumber")
+    public UserInfoDTO getAuthNumber(HttpServletRequest request) throws Exception {
+        log.info(this.getClass().getName() + ".getAuthNumber Start!");
+
+        String email = CmmUtil.nvl(request.getParameter("email"));
+
+        log.info("email : " + email);
+
+        UserInfoDTO pDTO = new UserInfoDTO();
+        pDTO.setEmail(EncryptUtil.encAES128CBC(email));
+
+        UserInfoDTO rDTO = Optional.ofNullable(userInfoService.getAuthNumber(pDTO)).orElseGet(UserInfoDTO::new);
+
+        log.info(this.getClass() + ".getAuthNumber End!");
+
+        return rDTO;
     }
 }

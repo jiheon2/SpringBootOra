@@ -39,4 +39,21 @@
         WHERE USER_ID = #{userId}
         AND PASSWORD = #{password}
     </select>
+
+    <select id="getUserId" parameterType="UserInfoDTO" resultType="UserInfoDTO">
+        SELECT USER_ID, USER_NAME, EMAIL
+        FROM USER_INFO
+        WHERE 1=1 <!-- WHERE 1=1의 조건을 추가함으로써 뒤에 오는 AND 조건을 문제없이 실행시킬 수 있음 -->
+        <if test="userId neq null and userId neq '' "> <!-- 비밀번호 찾기라면, user_id 조회 추가 -->
+            AND USER_ID = #{userId}
+        </if>
+        AND USER_NAME = #{userName}
+        AND EMAIL = #{email}
+    </select>
+
+    <update id="updatePassword" parameterType="UserInfoDTO">
+        UPDATE USER_INFO
+        SET PASSWORD = #{password}
+        WHERE USER_ID = #{userId}
+    </update>
 </mapper>
