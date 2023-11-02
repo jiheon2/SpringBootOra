@@ -47,8 +47,8 @@
 
             if (f.title.value === "") {
                 alert("제목을 입력하시기 바랍니다.");
-                f.title.focus();
-                return;
+                f.title.focus();"
+                return;"
             }
             if (calBytes(f.title.value) > 200) {
                 alert("최대 200Bytes까지 입력 가능합니다.");

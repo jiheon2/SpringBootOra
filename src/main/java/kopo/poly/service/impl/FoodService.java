@@ -19,7 +19,7 @@ import java.util.List;
 @Service
 public class FoodService implements IFoodService {
 
-    @Scheduled(cron = "2 * * * * *")
+    @Scheduled(cron = "* * * 2 * *") // 스케쥴링
     @Override
     public List<FoodDTO> toDayFood() throws Exception {
 
