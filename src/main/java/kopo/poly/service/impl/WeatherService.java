@@ -77,9 +77,9 @@ public class WeatherService implements IWeatherService {
         Map<String, Object> rMap = new ObjectMapper().readValue(json, LinkedHashMap.class);
 
         // 현재 날씨 정보를 가지고 있는 current 키의 값 가져오기
-        Map<String, Double> current = (Map<String, Double>) rMap.get("current");
+        Map<String, Integer> current = (Map<String, Integer>) rMap.get("current");
 
-        double currentTemp = current.get("temp"); // 현재기온
+        Number currentTemp = current.get("temp"); // 현재기온
         log.info("현재 기온 : " + currentTemp);
 
         // 일별 날씨 조회(OpenAPI가 현재 날짜 기준으로 최대 7일까지 제공)
@@ -106,7 +106,7 @@ public class WeatherService implements IWeatherService {
             log.info("----------------------------------");
 
             // temp JSON항목의 데이터값 타입이 소수점이 있는 숫자와 섞여있기 때문에 Double 사용
-            Map<String, Double> dailyTemp = (Map<String, Double>) dailyMap.get("temp");
+            Map<String, Integer> dailyTemp = (Map<String, Integer>) dailyMap.get("temp");
 
             // 숫자형태보다 문자열 형태가 데이터 처리하기 쉽기 때문에 Double 형태를 문자열로 변경
             String dayTemp = String.valueOf(dailyTemp.get("day")); // 평균기온
@@ -116,6 +116,14 @@ public class WeatherService implements IWeatherService {
             log.info("평균 기온 : " + dayTemp);
             log.info("최고 기온 : " + dayTempMax);
             log.info("최저 기온 : " + dayTempMin);
+
+            String icon = "";
+
+            List<Map<String, Object>> weatherList = (List<Map<String, Object>>) dailyMap.get("weather");
+            for (Map<String, Object> weatherMap : weatherList) {
+                icon = String.valueOf(weatherMap.get("icon")); // icon
+                log.info("icon : " + icon);
+            }
 
             WeatherDailyDTO wdDTO = new WeatherDailyDTO();
 
@@ -127,6 +135,7 @@ public class WeatherService implements IWeatherService {
             wdDTO.setDayTemp(dayTemp);
             wdDTO.setDayTempMax(dayTempMax);
             wdDTO.setDayTempMin(dayTempMin);
+            wdDTO.setIcon(icon);
 
             pList.add(wdDTO); // 일별 날씨정보를 List에 추가
 
@@ -138,7 +147,7 @@ public class WeatherService implements IWeatherService {
         // 필요한 데이터만 추출한 DTO 데이터
         rDTO.setLat(lat);
         rDTO.setLon(lon);
-        rDTO.setCurrentTemp(currentTemp);
+        rDTO.setCurrentTemp((Double) currentTemp);
         rDTO.setDailyList(pList);
 
         log.info(this.getClass().getName() + ".getWeather End!");

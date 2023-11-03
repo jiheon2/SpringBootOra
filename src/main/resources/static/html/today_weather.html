@@ -35,6 +35,7 @@
                             let dayTemp = daily.dayTemp; // 평균 기온
                             let dayTempMax = daily.dayTempMax; // 최고기온
                             let dayTempMin = daily.dayTempMin; // 최저기온
+                            let icon = daily.icon; // 아이콘
 
                             $("#daily_weather").append("<div class=\"divTableRow\">");
                             $("#daily_weather").append("<div class=\"divTableCell\">" + day + "</div>");
@@ -45,6 +46,7 @@
                             $("#daily_weather").append("<div class=\"divTableCell\">" + dayTemp + "</div>");
                             $("#daily_weather").append("<div class=\"divTableCell\">" + dayTempMax + "</div>");
                             $("#daily_weather").append("<div class=\"divTableCell\">" + dayTempMin + "</div>");
+                            $("#daily_weather").append("<div class=\"divTableCell\"><img src=\"" + "https://openweathermap.org/img/wn/" + icon + "@2x.png\">" + "</div>");
                         }
                     }
                 });
@@ -79,6 +81,7 @@
             <div class="divTableHead">평균 기온</div>
             <div class="divTableHead">최고 기온</div>
             <div class="divTableHead">최저 기온</div>
+            <div class="divTableHead">아이콘</div>
         </div>
     </div>
     <div class="divTableBody" id="daily_weather">

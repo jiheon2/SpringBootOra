@@ -14,4 +14,5 @@ public class WeatherDailyDTO {
     private String dayTemp;
     private String dayTempMax;
     private String dayTempMin;
+    private String icon;
 }
